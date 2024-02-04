@@ -1,18 +1,15 @@
-var request = require("request");
-var fs = require("fs");
+const request = require("request");
+const fs = require("fs");
 
-var host = "data.usajobs.gov";
-var userAgent = "cpitney@pitney.us";
-var authKey = "mA03dc38+Stfq0V4Fv9g3SVgyNOFuB41wwGaCLw1rgo=";
+const host = "data.usajobs.gov";
+const userAgent = "cpitney@pitney.us";
+const authKey = "mA03dc38+Stfq0V4Fv9g3SVgyNOFuB41wwGaCLw1rgo=";
 
-var keyword = "IT Project Manager";
-
-var location = "San Diego, California";
+const keyword = "IT Project Manager";
+const location = "San Diego, California";
 
 function searchJobs(keyword, location) {
-  var apiUrl = `https://data.usajobs.gov/api/search?PositionTitle=${encodeURIComponent(
-    keyword
-  )}&LocationName=${encodeURIComponent(location)}&ResultsPerPage=500`;
+  const apiUrl = `https://data.usajobs.gov/api/search?PositionTitle=${encodeURIComponent(keyword)}&LocationName=${encodeURIComponent(location)}&ResultsPerPage=500`;
 
   request(
     {
@@ -24,28 +21,32 @@ function searchJobs(keyword, location) {
         "Authorization-Key": authKey,
       },
     },
-    function (_error, _response, body) {
-      if (_error) {
-        console.error(_error);
+    (error, response, body) => {
+      if (error) {
+        console.error(error);
         return;
       }
 
-      var data = JSON.parse(body);
-      var results = data.SearchResult.SearchResultItems;
+      try {
+        const data = JSON.parse(body);
+        const results = data.SearchResult.SearchResultItems;
 
-      console.log(results);
-      downloadResult(results);
+        console.log(results);
+        downloadResult(results);
+      } catch (parseError) {
+        console.error("Error parsing JSON:", parseError);
+      }
     }
   );
 }
 
 function downloadResult(results) {
-  var sanitizedResults = sanitizeResults(results);
-  var fileName = `${keyword.toLowerCase().replace(/\s+/g, "-")}-jobs.json`;
+  const sanitizedResults = sanitizeResults(results);
+  const fileName = `${keyword.toLowerCase().replace(/\s+/g, "-")}-jobs.json`;
 
-  fs.writeFile(fileName, JSON.stringify(sanitizedResults), function (err) {
+  fs.writeFile(fileName, JSON.stringify(sanitizedResults), (err) => {
     if (err) {
-      console.error(err);
+      console.error("Error writing file:", err);
       return;
     }
     console.log(`Results saved to ${fileName}`);
@@ -53,22 +54,16 @@ function downloadResult(results) {
 }
 
 function sanitizeResults(results) {
-  // Iterate through results and sanitize each item
   return results.map((result) => sanitizeResult(result));
 }
 
 function sanitizeResult(result) {
-  for (var prop in result) {
-    if (Object.prototype.hasOwnProperty.call(result, prop)) {
-      if (typeof result[prop] === 'string') {
-        // Check if the property value is a string before replacing non-printable characters
-        result[prop] = result[prop].replace(/[^\x20-\x7E]+/g, '');
-      }
+  for (const prop in result) {
+    if (Object.prototype.hasOwnProperty.call(result, prop) && typeof result[prop] === 'string') {
+      result[prop] = result[prop].replace(/[^\x20-\x7E]+/g, '');
     }
   }
   return result;
 }
-
-
 
 searchJobs(keyword, location);
