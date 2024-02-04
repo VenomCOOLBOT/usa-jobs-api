@@ -9,35 +9,44 @@ const keyword = "IT Project Manager";
 const location = "San Diego, California";
 
 function searchJobs(keyword, location) {
-  const apiUrl = `https://data.usajobs.gov/api/search?PositionTitle=${encodeURIComponent(keyword)}&LocationName=${encodeURIComponent(location)}&ResultsPerPage=500`;
+  const maxResultsPerPage = 5000;
+  const totalPages = 200;
 
-  request(
-    {
-      url: apiUrl,
-      method: "GET",
-      headers: {
-        Host: host,
-        "User-Agent": userAgent,
-        "Authorization-Key": authKey,
+  for (let i = 1; i <= totalPages; i++) {
+    const apiUrl = `https://data.usajobs.gov/api/search?PositionTitle=${encodeURIComponent(
+      keyword
+    )}&LocationName=${encodeURIComponent(
+      location
+    )}&ResultsPerPage=${maxResultsPerPage}&Page=${i}`;
+
+    request(
+      {
+        url: apiUrl,
+        method: "GET",
+        headers: {
+          Host: host,
+          "User-Agent": userAgent,
+          "Authorization-Key": authKey,
+        },
       },
-    },
-    (error, response, body) => {
-      if (error) {
-        console.error(error);
-        return;
-      }
+      (error, response, body) => {
+        if (error) {
+          console.error(error);
+          return;
+        }
 
-      try {
-        const data = JSON.parse(body);
-        const results = data.SearchResult.SearchResultItems;
+        try {
+          const data = JSON.parse(body);
+          const results = data.SearchResult.SearchResultItems;
 
-        console.log(results);
-        downloadResult(results);
-      } catch (parseError) {
-        console.error("Error parsing JSON:", parseError);
+          console.log(results);
+          downloadResult(results);
+        } catch (parseError) {
+          console.error("Error parsing JSON:", parseError);
+        }
       }
-    }
-  );
+    );
+  }
 }
 
 function downloadResult(results) {
@@ -59,8 +68,11 @@ function sanitizeResults(results) {
 
 function sanitizeResult(result) {
   for (const prop in result) {
-    if (Object.prototype.hasOwnProperty.call(result, prop) && typeof result[prop] === 'string') {
-      result[prop] = result[prop].replace(/[^\x20-\x7E]+/g, '');
+    if (
+      Object.prototype.hasOwnProperty.call(result, prop) &&
+      typeof result[prop] === "string"
+    ) {
+      result[prop] = result[prop].replace(/[^\x20-\x7E]+/g, "");
     }
   }
   return result;
